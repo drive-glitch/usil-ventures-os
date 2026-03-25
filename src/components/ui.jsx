@@ -104,6 +104,46 @@ export function formatDate(d) {
   return `${parseInt(day)} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(m)-1]} ${y}`
 }
 
+// ─── Portfolio-specific components ───────────────────────────────────────────
+
+export const PORTFOLIO_STATUS = {
+  activa:         { label: 'Activa',         bg: '#D1FAE5', text: '#065F46' },
+  en_seguimiento: { label: 'En seguimiento', bg: '#DBEAFE', text: '#1E40AF' },
+  pausada:        { label: 'Pausada',        bg: '#FEF3C7', text: '#92400E' },
+  cerrada:        { label: 'Cerrada',        bg: '#F3F4F6', text: '#374151' },
+  adquirida:      { label: 'Adquirida',      bg: '#EDE9FE', text: '#5B21B6' },
+  sin_dato:       { label: 'Sin dato',       bg: '#F3F4F6', text: '#9CA3AF' },
+}
+
+export function StatusBadge({ status, small }) {
+  const s = PORTFOLIO_STATUS[status] || PORTFOLIO_STATUS.sin_dato
+  return (
+    <span style={{
+      background: s.bg, color: s.text, borderRadius: 5,
+      padding: small ? '2px 7px' : '3px 9px',
+      fontSize: small ? 10 : 11, fontWeight: 600, whiteSpace: 'nowrap', display: 'inline-block'
+    }}>{s.label}</span>
+  )
+}
+
+export function RecencyDot({ color, label }) {
+  return (
+    <span title={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
+      <span style={{ fontSize: 11, color: '#888' }}>{label}</span>
+    </span>
+  )
+}
+
+export function EmptyState({ message = 'Sin resultados', action }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '48px 0', color: '#bbb' }}>
+      <div style={{ fontSize: 13, marginBottom: action ? 14 : 0 }}>{message}</div>
+      {action}
+    </div>
+  )
+}
+
 export function PageHeader({ title, subtitle, action }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
