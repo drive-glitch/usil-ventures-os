@@ -64,8 +64,8 @@ function UpdateModal({ startups, onSave, onClose }) {
         </Field>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Revenue actual (S/)"><Input type="number" value={form.revenue_current} onChange={f('revenue_current')} /></Field>
-        <Field label="Funding nuevo (S/)"><Input type="number" value={form.funding_new} onChange={f('funding_new')} /></Field>
+        <Field label="Ventas actuales (S/)"><Input type="number" value={form.revenue_current} onChange={f('revenue_current')} /></Field>
+        <Field label="Nueva inversión (S/)"><Input type="number" value={form.funding_new} onChange={f('funding_new')} /></Field>
       </div>
       <Field label="Hito / logro"><Input value={form.milestone} onChange={f('milestone')} placeholder="Ej: Primer contrato" /></Field>
       <Field label="Soporte necesario"><Input value={form.support_needed} onChange={f('support_needed')} /></Field>
@@ -197,8 +197,8 @@ export default function Updates() {
                     {u.milestone && <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>🏁 {u.milestone}</div>}
                     {(u.revenue_current || u.funding_new) && (
                       <div style={{ fontSize: 12, color: '#555', marginBottom: 4, display: 'flex', gap: 14 }}>
-                        {u.revenue_current && <span>Revenue: <strong style={{ color: '#059669' }}>{formatCurrency(u.revenue_current)}</strong></span>}
-                        {u.funding_new     && <span>Funding: <strong style={{ color: '#D97706' }}>{formatCurrency(u.funding_new)}</strong></span>}
+                        {u.revenue_current && <span>Ventas: <strong style={{ color: '#059669' }}>{formatCurrency(u.revenue_current)}</strong></span>}
+                        {u.funding_new     && <span>Inversión: <strong style={{ color: '#D97706' }}>{formatCurrency(u.funding_new)}</strong></span>}
                       </div>
                     )}
                     {u.support_needed && <div style={{ fontSize: 12, color: '#D97706' }}>Soporte: {u.support_needed}</div>}

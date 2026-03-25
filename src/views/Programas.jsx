@@ -3,16 +3,18 @@ import { supabase } from '../lib/supabase'
 import { Badge, PrioDot, PageHeader, formatDate, Modal, Field, Input, Select, Btn, ESTADOS, TRIMESTRES } from '../components/ui'
 
 const empty = { nombre: '', responsable: '', trimestre: 'Q2', estado: 'por_iniciar', prioridad: 'media', fecha_inicio: '', fecha_fin: '' }
-const BORDER = { en_ejecucion: '#10B981', por_iniciar: '#3B82F6', en_riesgo: '#F59E0B', retrasado: '#EF4444', cerrado: '#9CA3AF' }
+
+const BORDER_COLOR = { en_ejecucion: '#10B981', por_iniciar: '#3B82F6', en_riesgo: '#F59E0B', retrasado: '#EF4444', cerrado: '#9CA3AF' }
+const ESTADO_BG    = { en_ejecucion: '#ECFDF5', por_iniciar: '#EFF6FF', en_riesgo: '#FFFBEB', retrasado: '#FEF2F2', cerrado: '#F9FAFB' }
 
 export default function Programas() {
-  const [items, setItems] = useState([])
-  const [hitos, setHitos] = useState([])
-  const [modal, setModal] = useState(null)
-  const [form, setForm] = useState(empty)
+  const [items,    setItems]    = useState([])
+  const [hitos,    setHitos]    = useState([])
+  const [modal,    setModal]    = useState(null)
+  const [form,     setForm]     = useState(empty)
   const [expanded, setExpanded] = useState(null)
   const [filterEstado, setFilterEstado] = useState('todos')
-  const [filterQ, setFilterQ] = useState('todos')
+  const [filterQ,      setFilterQ]      = useState('todos')
 
   useEffect(() => { load() }, [])
 
@@ -43,70 +45,123 @@ export default function Programas() {
     .filter(p => filterEstado === 'todos' || p.estado === filterEstado)
     .filter(p => filterQ === 'todos' || p.trimestre === filterQ)
 
+  const sel = { fontSize: 12, padding: '7px 10px', borderRadius: 7, border: '1px solid #D1D5DB', background: '#fff' }
+
+  // Summary counters
+  const counts = Object.keys(ESTADOS).reduce((acc, k) => { acc[k] = items.filter(i => i.estado === k).length; return acc }, {})
+
   return (
     <div>
       <PageHeader title="Programas" subtitle={`${items.length} programas registrados`}
         action={<Btn onClick={() => { setForm({...empty}); setModal({ mode: 'new' }) }}>+ Nuevo programa</Btn>} />
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} style={{ fontSize: 12, padding: '7px 10px', borderRadius: 7, border: '1px solid #D1D5DB', background: '#fff' }}>
-          <option value="todos">Todos los estados</option>
-          {Object.entries(ESTADOS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-        <select value={filterQ} onChange={e => setFilterQ(e.target.value)} style={{ fontSize: 12, padding: '7px 10px', borderRadius: 7, border: '1px solid #D1D5DB', background: '#fff' }}>
+      {/* Status summary chips */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {Object.entries(ESTADOS).map(([k, v]) => counts[k] > 0 && (
+          <button key={k} onClick={() => setFilterEstado(filterEstado === k ? 'todos' : k)}
+            style={{ fontSize: 12, padding: '5px 12px', borderRadius: 20, border: `1px solid ${filterEstado === k ? v.border : '#E5E7EB'}`, background: filterEstado === k ? v.bg : '#fff', color: filterEstado === k ? v.text : '#555', cursor: 'pointer', fontFamily: 'inherit', fontWeight: filterEstado === k ? 600 : 400 }}>
+            {v.label} <strong>{counts[k]}</strong>
+          </button>
+        ))}
+        <select value={filterQ} onChange={e => setFilterQ(e.target.value)} style={{ ...sel, marginLeft: 'auto' }}>
           <option value="todos">Todos los trimestres</option>
           {TRIMESTRES.map(q => <option key={q} value={q}>{q}</option>)}
         </select>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Card grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
         {filtered.map(p => {
-          const hitosP = hitos.filter(h => h.programa === p.nombre)
-          const open = expanded === p.id
+          const hitosP      = hitos.filter(h => h.programa === p.nombre)
+          const completados = hitosP.filter(h => h.estado === 'cerrado').length
+          const total       = hitosP.length
+          const pct         = total > 0 ? Math.round((completados / total) * 100) : 0
+          const barColor    = BORDER_COLOR[p.estado] || '#9CA3AF'
+          const open        = expanded === p.id
+
           return (
-            <div key={p.id} style={{ background: '#fff', border: '1px solid #E8E7E2', borderLeft: `4px solid ${BORDER[p.estado] || '#9CA3AF'}`, borderRadius: 10, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 18px', cursor: 'pointer' }} onClick={() => setExpanded(open ? null : p.id)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
+            <div key={p.id} style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {/* Color top stripe */}
+              <div style={{ height: 4, background: barColor }} />
+
+              <div style={{ padding: '14px 16px', flex: 1 }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ flex: 1, paddingRight: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                       <PrioDot prioridad={p.prioridad} />
-                      <span style={{ fontSize: 14, fontWeight: 700 }}>{p.nombre}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, background: '#F3F4F6', color: '#374151' }}>{p.trimestre}</span>
-                      <Badge estado={p.estado} small />
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a18' }}>{p.nombre}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: '#888', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                      <span>Responsable: <strong style={{ color: '#555' }}>{p.responsable}</strong></span>
-                      {p.fecha_inicio && <span>{formatDate(p.fecha_inicio)} → {formatDate(p.fecha_fin)}</span>}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Badge estado={p.estado} small />
+                      <span style={{ fontSize: 11, background: '#F3F4F6', borderRadius: 5, padding: '2px 7px', color: '#555', fontWeight: 500 }}>{p.trimestre}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, marginLeft: 12, flexShrink: 0, alignItems: 'center' }}>
-                    <button onClick={e => { e.stopPropagation(); setForm({...p}); setModal({ mode: 'edit', item: p }) }} style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer' }}>Editar</button>
-                    <button onClick={e => { e.stopPropagation(); del(p.id) }} style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '1px solid #FCA5A5', background: '#FEF2F2', cursor: 'pointer', color: '#991B1B' }}>Eliminar</button>
-                    <span style={{ fontSize: 12, color: '#bbb' }}>{open ? '▲' : '▼'}</span>
+                </div>
+
+                {/* Responsable + fechas */}
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
+                  <span style={{ fontWeight: 500, color: '#555' }}>{p.responsable}</span>
+                  {p.fecha_inicio && <span style={{ marginLeft: 8 }}>· {formatDate(p.fecha_inicio)} → {formatDate(p.fecha_fin)}</span>}
+                </div>
+
+                {/* Hitos progress */}
+                {total > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888', marginBottom: 4 }}>
+                      <span>Hitos completados</span>
+                      <span style={{ fontWeight: 600, color: barColor }}>{completados} / {total} ({pct}%)</span>
+                    </div>
+                    <div style={{ height: 6, background: '#F0EFE9', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: 4, transition: 'width 0.4s' }} />
+                    </div>
+                  </div>
+                )}
+                {total === 0 && (
+                  <div style={{ fontSize: 11, color: '#bbb', marginBottom: 12 }}>Sin hitos registrados</div>
+                )}
+
+                {/* Actions row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  {total > 0 ? (
+                    <button onClick={() => setExpanded(open ? null : p.id)}
+                      style={{ fontSize: 11, color: '#1D4ED8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                      {open ? '▲ Ocultar hitos' : `▼ Ver ${total} hito${total > 1 ? 's' : ''}`}
+                    </button>
+                  ) : <span />}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => { setForm({...p}); setModal({ mode: 'edit', item: p }) }}
+                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer' }}>Editar</button>
+                    <button onClick={() => del(p.id)}
+                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #FCA5A5', background: '#FEF2F2', cursor: 'pointer', color: '#991B1B' }}>×</button>
                   </div>
                 </div>
               </div>
+
+              {/* Hitos expand */}
               {open && (
-                <div style={{ padding: '0 18px 16px', borderTop: '1px solid #F3F4F6' }}>
-                  <div style={{ paddingTop: 12, fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Hitos del programa</div>
-                  {hitosP.length === 0
-                    ? <p style={{ fontSize: 13, color: '#bbb', margin: 0 }}>Sin hitos. Agrégalos en la sección Hitos.</p>
-                    : hitosP.map(h => (
-                      <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #F9FAFB', fontSize: 13 }}>
-                        <span><strong>{h.nombre}</strong> <span style={{ color: '#888', fontSize: 12 }}>{h.etapa}</span></span>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <Badge estado={h.estado} small />
-                          <span style={{ fontSize: 11, color: '#bbb' }}>{formatDate(h.fecha)}</span>
-                        </div>
+                <div style={{ borderTop: '1px solid #F3F4F6', padding: '10px 16px 14px', background: '#FAFAFA' }}>
+                  {hitosP.map(h => (
+                    <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #F0EFE9', fontSize: 12 }}>
+                      <span><strong>{h.nombre}</strong> {h.etapa && <span style={{ color: '#888' }}>· {h.etapa}</span>}</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <Badge estado={h.estado} small />
+                        <span style={{ fontSize: 11, color: '#bbb' }}>{formatDate(h.fecha)}</span>
                       </div>
-                    ))
-                  }
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )
         })}
       </div>
+
+      {filtered.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: '#bbb', fontSize: 13 }}>
+          Sin programas con estos filtros.
+        </div>
+      )}
 
       {modal && (
         <Modal title={modal.mode === 'new' ? 'Nuevo programa' : 'Editar programa'} onClose={() => setModal(null)}>

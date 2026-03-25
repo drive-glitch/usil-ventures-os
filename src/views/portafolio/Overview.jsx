@@ -8,15 +8,51 @@ import {
 const sel = { fontSize: 12, padding: '7px 10px', borderRadius: 7, border: '1px solid #D1D5DB', background: '#fff' }
 
 const KPI_DEFS = kpis => [
-  { label: 'Total startups',  value: kpis.total,       color: '#374151' },
-  { label: 'Activas',         value: kpis.activas,     color: '#059669' },
-  { label: 'En seguimiento',  value: kpis.seguimiento, color: '#1D4ED8' },
-  { label: 'Sin update +90d', value: kpis.sinUpdate90, color: '#EF4444' },
-  { label: 'Con revenue',     value: kpis.conRevenue,  color: '#059669' },
-  { label: 'Con funding',     value: kpis.conFunding,  color: '#D97706' },
-  { label: 'Softlanding',     value: kpis.conSoft,     color: '#7C3AED' },
-  { label: 'Top tier',        value: kpis.topTier,     color: '#1D4ED8' },
+  { label: 'Total startups',      value: kpis.total,       color: '#374151', icon: '🚀' },
+  { label: 'Activas',             value: kpis.activas,     color: '#059669', icon: '✅' },
+  { label: 'En seguimiento',      value: kpis.seguimiento, color: '#1D4ED8', icon: '👁️' },
+  { label: 'Necesitan atención',  value: kpis.sinUpdate90, color: '#EF4444', icon: '⚠️' },
+  { label: 'Generando ventas',    value: kpis.conRevenue,  color: '#059669', icon: '💰' },
+  { label: 'Con inversión',       value: kpis.conFunding,  color: '#D97706', icon: '📈' },
+  { label: 'En el exterior',      value: kpis.conSoft,     color: '#7C3AED', icon: '🌍' },
+  { label: 'Top portafolio',      value: kpis.topTier,     color: '#1D4ED8', icon: '⭐' },
 ]
+
+// ── Charts helpers ────────────────────────────────────────────────────────────
+function DonutChart({ segments, size = 100 }) {
+  const total = segments.reduce((s, d) => s + d.value, 0)
+  if (total === 0) return <div style={{ width: size, height: size, borderRadius: '50%', background: '#F3F4F6', flexShrink: 0 }} />
+  let cum = 0
+  const parts = segments.map(d => {
+    const start = (cum / total) * 100
+    cum += d.value
+    const end = (cum / total) * 100
+    return `${d.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`
+  })
+  const inner = Math.round(size * 0.54)
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: `conic-gradient(${parts.join(',')})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ width: inner, height: inner, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+        <span style={{ fontSize: Math.round(size * 0.19), fontWeight: 700, lineHeight: 1 }}>{total}</span>
+        <span style={{ fontSize: 9, color: '#aaa' }}>total</span>
+      </div>
+    </div>
+  )
+}
+
+function HBar({ label, value, max, color }) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
+        <span style={{ color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{label}</span>
+        <span style={{ fontWeight: 600, color, flexShrink: 0, marginLeft: 6 }}>{value}</span>
+      </div>
+      <div style={{ height: 6, background: '#F0EFE9', borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${max > 0 ? (value / max) * 100 : 0}%`, background: color, borderRadius: 3 }} />
+      </div>
+    </div>
+  )
+}
 
 export default function Overview({ onSelectStartup, onAddStartup }) {
   const [startups, setStartups] = useState([])
@@ -62,17 +98,61 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
         action={<Btn onClick={onAddStartup}>+ Nueva startup</Btn>}
       />
 
-      {/* KPI cards — mismo patrón que Dashboard */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+      {/* KPI cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
         {KPI_DEFS(kpis).map(k => (
-          <div key={k.label} style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-              <span style={{ fontSize: 32, fontWeight: 700, color: k.color, lineHeight: 1 }}>{k.value}</span>
+          <div key={k.label} style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1.4 }}>{k.label}</div>
+              <span style={{ fontSize: 16 }}>{k.icon}</span>
             </div>
+            <span style={{ fontSize: 30, fontWeight: 700, color: k.color, lineHeight: 1 }}>{k.value}</span>
           </div>
         ))}
       </div>
+
+      {/* Charts row */}
+      {filtered.length > 0 && (() => {
+        const statusSegs = [
+          { label: 'Activas',        value: filtered.filter(s => s.current_status === 'activa').length,        color: '#059669' },
+          { label: 'En seguimiento', value: filtered.filter(s => s.current_status === 'en_seguimiento').length, color: '#3B82F6' },
+          { label: 'Adquiridas',     value: filtered.filter(s => s.current_status === 'adquirida').length,     color: '#8B5CF6' },
+          { label: 'Cerradas',       value: filtered.filter(s => s.current_status === 'cerrada').length,       color: '#9CA3AF' },
+        ].filter(d => d.value > 0)
+
+        const sectorCount = {}
+        filtered.forEach(s => { if (s.sector) sectorCount[s.sector] = (sectorCount[s.sector] || 0) + 1 })
+        const topSectors = Object.entries(sectorCount).sort((a,b) => b[1]-a[1]).slice(0,5)
+        const maxSector  = topSectors[0]?.[1] || 1
+        const sectorColors = ['#1D4ED8','#059669','#D97706','#7C3AED','#EF4444']
+
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 20 }}>
+            <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>Estado del portafolio</div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <DonutChart segments={statusSegs} size={88} />
+                <div style={{ flex: 1 }}>
+                  {statusSegs.map((d, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: '#555', flex: 1 }}>{d.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: d.color }}>{d.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>Top sectores</div>
+              {topSectors.map(([sector, count], i) => (
+                <HBar key={sector} label={sector} value={count} max={maxSector} color={sectorColors[i] || '#9CA3AF'} />
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Filtros — mismo patrón que Programas / Hitos */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
