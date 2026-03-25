@@ -96,13 +96,18 @@ export default function Updates() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [u, s, p] = await Promise.all([
-      fetchUpdates({ limit: 200 }),
-      fetchStartups(),
-      fetchPendingSubmissions(),
-    ])
-    setUpdates(u); setStartups(s); setPending(p)
-    setLoading(false)
+    try {
+      const [u, s, p] = await Promise.all([
+        fetchUpdates({ limit: 200 }),
+        fetchStartups(),
+        fetchPendingSubmissions(),
+      ])
+      setUpdates(u); setStartups(s); setPending(p)
+    } catch (e) {
+      console.error('Updates load error:', e)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { load() }, [load])
