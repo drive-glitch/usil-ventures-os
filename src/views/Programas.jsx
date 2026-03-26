@@ -6,6 +6,34 @@ const empty = { nombre: '', responsable: '', trimestre: 'Q2', estado: 'por_inici
 
 const BORDER_COLOR = { en_ejecucion: '#10B981', por_iniciar: '#3B82F6', en_riesgo: '#F59E0B', retrasado: '#EF4444', cerrado: '#9CA3AF' }
 
+const EQUIPO_UV = ['Marcoantonio Pacheco', 'Leslie Ponce', 'Arturo Garro']
+
+function ResponsableChip({ responsable }) {
+  const [open, setOpen] = useState(false)
+  const isTeam = !responsable || /todo|equipo/i.test(responsable)
+  if (!isTeam) return <span style={{ fontWeight: 500, color: '#555', fontSize: 12 }}>{responsable}</span>
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      <button onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        style={{ fontSize: 12, fontWeight: 500, color: '#555', background: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: 5, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit' }}>
+        Todo el equipo {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: '1px solid #E8E7E2', borderRadius: 7, padding: '8px 12px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', minWidth: 200 }}>
+          {EQUIPO_UV.map(m => (
+            <div key={m} style={{ fontSize: 12, color: '#374151', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#EFF6FF', color: '#1D4ED8', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {m.split(' ').map(w => w[0]).join('').slice(0,2)}
+              </span>
+              {m}
+            </div>
+          ))}
+        </div>
+      )}
+    </span>
+  )
+}
+
 export default function Programas({ initialFilter = {} }) {
   const [items,    setItems]    = useState([])
   const [hitos,    setHitos]    = useState([])
@@ -14,7 +42,7 @@ export default function Programas({ initialFilter = {} }) {
   const [errors,   setErrors]   = useState({})
   const [expanded, setExpanded] = useState(null)
   const [filterEstado, setFilterEstado] = useState(initialFilter.estado || 'todos')
-  const [filterQ,      setFilterQ]      = useState('todos')
+  const [filterQs, setFilterQs] = useState([])
   const [confirm, setConfirm]   = useState(null)
   const { toast, showToast }    = useToast()
 
@@ -23,7 +51,6 @@ export default function Programas({ initialFilter = {} }) {
   async function load() {
     const cached = localStorage.getItem('usil_programas')
     if (cached) try { setItems(JSON.parse(cached)) } catch {}
-
     const [{ data: p }, { data: h }] = await Promise.all([
       supabase.from('programas').select('*').order('created_at'),
       supabase.from('hitos').select('*').order('fecha'),
@@ -33,6 +60,8 @@ export default function Programas({ initialFilter = {} }) {
     if (p) localStorage.setItem('usil_programas', JSON.stringify(p))
     if (h) localStorage.setItem('usil_hitos', JSON.stringify(h))
   }
+
+  const toggleQ = q => setFilterQs(qs => qs.includes(q) ? qs.filter(x => x !== q) : [...qs, q])
 
   const validate = () => {
     const e = {}
@@ -53,27 +82,47 @@ export default function Programas({ initialFilter = {} }) {
   const del = (id, nombre) => {
     setConfirm({
       message: `¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`,
-      onConfirm: async () => {
-        await supabase.from('programas').delete().eq('id', id)
-        showToast('Programa eliminado')
-        load()
-      },
+      onConfirm: async () => { await supabase.from('programas').delete().eq('id', id); showToast('Programa eliminado'); load() },
     })
   }
 
-  const filtered = items
-    .filter(p => filterEstado === 'todos' || p.estado === filterEstado)
-    .filter(p => filterQ === 'todos' || p.trimestre === filterQ)
+  // Filtrado por Q primero, luego por estado
+  const filteredByQ = items.filter(p => filterQs.length === 0 || filterQs.includes(p.trimestre))
+  const filtered    = filteredByQ.filter(p => filterEstado === 'todos' || p.estado === filterEstado)
 
-  const sel = { fontSize: 12, padding: '7px 10px', borderRadius: 7, border: '1px solid #D1D5DB', background: '#fff' }
-  const counts = Object.keys(ESTADOS).reduce((acc, k) => { acc[k] = items.filter(i => i.estado === k).length; return acc }, {})
+  // Contadores reactivos al filtro Q activo
+  const counts = Object.keys(ESTADOS).reduce((acc, k) => {
+    acc[k] = filteredByQ.filter(i => i.estado === k).length
+    return acc
+  }, {})
 
   return (
     <div>
       <PageHeader title="Programas" subtitle={`${items.length} programas registrados`}
         action={<Btn onClick={() => { setForm({...empty}); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo programa</Btn>} />
 
-      {/* Status summary chips */}
+      {/* Multi-Q chips */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 11, color: '#888', fontWeight: 600, marginRight: 2 }}>Trimestre:</span>
+        {TRIMESTRES.map(q => (
+          <button key={q} onClick={() => toggleQ(q)}
+            style={{
+              fontSize: 12, padding: '5px 12px', borderRadius: 20, fontFamily: 'inherit', cursor: 'pointer', fontWeight: filterQs.includes(q) ? 700 : 400,
+              border: `1px solid ${filterQs.includes(q) ? '#1D4ED8' : '#D1D5DB'}`,
+              background: filterQs.includes(q) ? '#1D4ED8' : '#fff',
+              color: filterQs.includes(q) ? '#fff' : '#555',
+            }}>
+            {q}
+          </button>
+        ))}
+        {filterQs.length > 0 && (
+          <button onClick={() => setFilterQs([])} style={{ fontSize: 11, color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+            Limpiar
+          </button>
+        )}
+      </div>
+
+      {/* Estado chips — contadores reactivos al Q activo */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {Object.entries(ESTADOS).map(([k, v]) => counts[k] > 0 && (
           <button key={k} onClick={() => setFilterEstado(filterEstado === k ? 'todos' : k)}
@@ -81,10 +130,6 @@ export default function Programas({ initialFilter = {} }) {
             {v.label} <strong>{counts[k]}</strong>
           </button>
         ))}
-        <select value={filterQ} onChange={e => setFilterQ(e.target.value)} style={{ ...sel, marginLeft: 'auto' }}>
-          <option value="todos">Todos los trimestres</option>
-          {TRIMESTRES.map(q => <option key={q} value={q}>{q}</option>)}
-        </select>
       </div>
 
       {/* Card grid */}
@@ -114,9 +159,9 @@ export default function Programas({ initialFilter = {} }) {
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>
-                  <span style={{ fontWeight: 500, color: '#555' }}>{p.responsable}</span>
-                  {p.fecha_inicio && <span style={{ marginLeft: 8 }}>· {formatDate(p.fecha_inicio)} → {formatDate(p.fecha_fin)}</span>}
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <ResponsableChip responsable={p.responsable} />
+                  {p.fecha_inicio && <span style={{ color: '#aaa' }}>· {formatDate(p.fecha_inicio)} → {formatDate(p.fecha_fin)}</span>}
                 </div>
 
                 {total > 0 && (
@@ -180,7 +225,7 @@ export default function Programas({ initialFilter = {} }) {
               style={errors.nombre ? { borderColor: '#EF4444' } : {}} />
           </Field>
           <Field label="Responsable">
-            <Input value={form.responsable} onChange={e => setForm(f => ({...f, responsable: e.target.value}))} />
+            <Input value={form.responsable} onChange={e => setForm(f => ({...f, responsable: e.target.value}))} placeholder="Ej: Leslie Ponce, Todo el equipo" />
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Field label="Trimestre">

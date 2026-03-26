@@ -296,6 +296,8 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
   const [editingProgram, setEditingProgram] = useState(null)
   const [confirm, setConfirm]     = useState(null)
   const { toast, showToast }      = useToast()
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesValue, setNotesValue]     = useState(startup.notas || '')
 
   const loadRelated = useCallback(async (id) => {
     const [p, u, c, t] = await Promise.all([
@@ -315,8 +317,16 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
   const afterEdit = async () => {
     const fresh = await fetchStartupById(startup.id)
     setStartup(fresh)
+    setNotesValue(fresh.notas || '')
     setModal(null)
     showToast('Startup actualizada correctamente')
+  }
+
+  const saveNotes = async () => {
+    await saveStartup({ ...startup, notas: notesValue }, startup.id)
+    setStartup(s => ({ ...s, notas: notesValue }))
+    setEditingNotes(false)
+    showToast('Resumen guardado')
   }
 
   const afterRelated = () => { loadRelated(startup.id); setModal(null); setEditingTask(null); setEditingProgram(null) }
@@ -373,7 +383,10 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
 
           {/* 1. Resumen general */}
           <Section title="Resumen general" action={
-            startup.link_web && <a href={startup.link_web} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#1D4ED8' }}>Ver web →</a>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {startup.link_web && <a href={startup.link_web} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#1D4ED8' }}>Ver web →</a>}
+              {!editingNotes && <button onClick={() => setEditingNotes(true)} style={{ fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }} title="Editar resumen">✏️</button>}
+            </div>
           }>
             {[
               ['Fundadores',  startup.fundadores],
@@ -387,9 +400,31 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
                 <span style={S.value}>{v}</span>
               </div>
             ))}
-            {startup.notas && (
-              <div style={{ marginTop: 10, padding: '10px 12px', background: '#F9FAFB', borderRadius: 7, fontSize: 12, color: '#555', lineHeight: 1.6 }}>
+
+            {/* Notas/resumen inline editable */}
+            {editingNotes ? (
+              <div style={{ marginTop: 10 }}>
+                <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)}
+                  autoFocus
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 7, border: '1px solid #1D4ED8', fontSize: 12, fontFamily: 'inherit', resize: 'vertical', minHeight: 80, boxSizing: 'border-box', lineHeight: 1.6, outline: 'none' }} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, justifyContent: 'flex-end' }}>
+                  <button onClick={() => { setEditingNotes(false); setNotesValue(startup.notas || '') }}
+                    style={{ fontSize: 12, padding: '5px 12px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+                  <button onClick={saveNotes}
+                    style={{ fontSize: 12, padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1D4ED8', color: '#fff', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit' }}>Guardar</button>
+                </div>
+              </div>
+            ) : startup.notas ? (
+              <div onClick={() => setEditingNotes(true)}
+                style={{ marginTop: 10, padding: '10px 12px', background: '#F9FAFB', borderRadius: 7, fontSize: 12, color: '#555', lineHeight: 1.6, cursor: 'pointer', border: '1px solid transparent' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#D1D5DB'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}>
                 {startup.notas}
+              </div>
+            ) : (
+              <div onClick={() => setEditingNotes(true)}
+                style={{ marginTop: 10, padding: '10px 12px', background: '#F9FAFB', borderRadius: 7, fontSize: 12, color: '#9CA3AF', lineHeight: 1.6, cursor: 'pointer', border: '1px dashed #D1D5DB', textAlign: 'center' }}>
+                Sin resumen. Haz clic para agregar.
               </div>
             )}
           </Section>

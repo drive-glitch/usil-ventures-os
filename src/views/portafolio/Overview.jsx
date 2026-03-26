@@ -18,15 +18,12 @@ const KPI_DEFS = kpis => [
   { label: 'Top portafolio',      value: kpis.topTier,     color: '#1D4ED8', icon: '⭐' },
 ]
 
-// ── Charts helpers ────────────────────────────────────────────────────────────
 function DonutChart({ segments, size = 100 }) {
   const total = segments.reduce((s, d) => s + d.value, 0)
   if (total === 0) return <div style={{ width: size, height: size, borderRadius: '50%', background: '#F3F4F6', flexShrink: 0 }} />
   let cum = 0
   const parts = segments.map(d => {
-    const start = (cum / total) * 100
-    cum += d.value
-    const end = (cum / total) * 100
+    const start = (cum / total) * 100; cum += d.value; const end = (cum / total) * 100
     return `${d.color} ${start.toFixed(1)}% ${end.toFixed(1)}%`
   })
   const inner = Math.round(size * 0.54)
@@ -54,10 +51,30 @@ function HBar({ label, value, max, color }) {
   )
 }
 
+// Tooltip wrapper
+function Tip({ label, children }) {
+  const [show, setShow] = useState(false)
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      {children}
+      {show && (
+        <span style={{
+          position: 'absolute', bottom: '130%', left: '50%', transform: 'translateX(-50%)',
+          background: '#1a1a18', color: '#fff', fontSize: 11, fontWeight: 500,
+          padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 100,
+          pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        }}>{label}</span>
+      )}
+    </span>
+  )
+}
+
 export default function Overview({ onSelectStartup, onAddStartup }) {
   const [startups, setStartups] = useState([])
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
+  const [search,   setSearch]   = useState('')
 
   const [fStatus,   setFStatus]   = useState('')
   const [fSector,   setFSector]   = useState('')
@@ -75,7 +92,14 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
 
   useEffect(() => { load() }, [load])
 
+  const q = search.toLowerCase()
   const filtered = startups
+    .filter(s => !q ||
+      s.nombre?.toLowerCase().includes(q) ||
+      s.sector?.toLowerCase().includes(q) ||
+      s.fundadores?.toLowerCase().includes(q) ||
+      s.pais?.toLowerCase().includes(q)
+    )
     .filter(s => !fStatus   || s.current_status === fStatus)
     .filter(s => !fSector   || s.sector         === fSector)
     .filter(s => !fTier     || s.portfolio_tier  === fTier)
@@ -84,8 +108,8 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
     .filter(s => fRevenue === '' || (fRevenue === 'si' ? s.has_revenue  : !s.has_revenue))
 
   const kpis       = computeOverviewKPIs(startups)
-  const hasFilters = fStatus || fSector || fTier || fPriority || fFunding || fRevenue
-  const clearFn    = () => { setFStatus(''); setFSector(''); setFTier(''); setFPriority(''); setFFunding(''); setFRevenue('') }
+  const hasFilters = fStatus || fSector || fTier || fPriority || fFunding || fRevenue || search
+  const clearFn    = () => { setFStatus(''); setFSector(''); setFTier(''); setFPriority(''); setFFunding(''); setFRevenue(''); setSearch('') }
 
   if (loading) return <div style={{ color: '#888', fontSize: 14, padding: '40px 0' }}>Cargando...</div>
   if (error)   return <div style={{ color: '#EF4444', fontSize: 14, padding: '40px 0' }}>{error}</div>
@@ -114,18 +138,16 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
       {/* Charts row */}
       {filtered.length > 0 && (() => {
         const statusSegs = [
-          { label: 'Activas',        value: filtered.filter(s => s.current_status === 'activa').length,        color: '#059669' },
-          { label: 'En seguimiento', value: filtered.filter(s => s.current_status === 'en_seguimiento').length, color: '#3B82F6' },
-          { label: 'Adquiridas',     value: filtered.filter(s => s.current_status === 'adquirida').length,     color: '#8B5CF6' },
-          { label: 'Cerradas',       value: filtered.filter(s => s.current_status === 'cerrada').length,       color: '#9CA3AF' },
+          { label: 'Activas',        value: filtered.filter(s => s.current_status === 'activa').length,         color: '#059669' },
+          { label: 'En seguimiento', value: filtered.filter(s => s.current_status === 'en_seguimiento').length,  color: '#3B82F6' },
+          { label: 'Adquiridas',     value: filtered.filter(s => s.current_status === 'adquirida').length,      color: '#8B5CF6' },
+          { label: 'Cerradas',       value: filtered.filter(s => s.current_status === 'cerrada').length,        color: '#9CA3AF' },
         ].filter(d => d.value > 0)
-
         const sectorCount = {}
         filtered.forEach(s => { if (s.sector) sectorCount[s.sector] = (sectorCount[s.sector] || 0) + 1 })
-        const topSectors = Object.entries(sectorCount).sort((a,b) => b[1]-a[1]).slice(0,5)
-        const maxSector  = topSectors[0]?.[1] || 1
+        const topSectors   = Object.entries(sectorCount).sort((a,b) => b[1]-a[1]).slice(0,5)
+        const maxSector    = topSectors[0]?.[1] || 1
         const sectorColors = ['#1D4ED8','#059669','#D97706','#7C3AED','#EF4444']
-
         return (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 20 }}>
             <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px' }}>
@@ -143,7 +165,6 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
                 </div>
               </div>
             </div>
-
             <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>Top sectores</div>
               {topSectors.map(([sector, count], i) => (
@@ -154,7 +175,21 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
         )
       })()}
 
-      {/* Filtros — mismo patrón que Programas / Hitos */}
+      {/* Buscador */}
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <input
+          type="search" value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar startup por nombre, sector, fundador o país..."
+          style={{ width: '100%', padding: '10px 36px 10px 14px', borderRadius: 8, border: '1px solid #D1D5DB', fontSize: 13, background: '#fff', color: '#1a1a18', boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }}
+        />
+        {search && (
+          <button onClick={() => setSearch('')}
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9CA3AF', lineHeight: 1 }}>×</button>
+        )}
+      </div>
+
+      {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <select value={fStatus}   onChange={e => setFStatus(e.target.value)}   style={sel}>
           <option value="">Todos los estados</option>
@@ -173,14 +208,14 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
           {PRIORITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <select value={fFunding}  onChange={e => setFFunding(e.target.value)}  style={sel}>
-          <option value="">Con/sin funding</option>
-          <option value="si">Con funding</option>
-          <option value="no">Sin funding</option>
+          <option value="">Con/sin inversión</option>
+          <option value="si">Con inversión</option>
+          <option value="no">Sin inversión</option>
         </select>
         <select value={fRevenue}  onChange={e => setFRevenue(e.target.value)}  style={sel}>
-          <option value="">Con/sin revenue</option>
-          <option value="si">Con revenue</option>
-          <option value="no">Sin revenue</option>
+          <option value="">Con/sin ventas</option>
+          <option value="si">Con ventas</option>
+          <option value="no">Sin ventas</option>
         </select>
         {hasFilters && (
           <button onClick={clearFn} style={{ fontSize: 12, color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
@@ -189,11 +224,11 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
         )}
       </div>
 
-      {/* Tabla — mismo patrón que Hitos */}
+      {/* Tabla */}
       {filtered.length === 0
-        ? <EmptyState message={hasFilters ? 'Sin resultados con estos filtros.' : 'Sin startups. Agrega la primera.'} />
+        ? <EmptyState message={hasFilters ? `Sin resultados para "${search || 'estos filtros'}"` : 'Sin startups. Agrega la primera.'} />
         : (
-          <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, overflow: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E8E7E2' }}>
@@ -204,27 +239,39 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
               </thead>
               <tbody>
                 {filtered.map((s, i) => (
-                  <tr key={s.id}
-                    onClick={() => onSelectStartup(s)}
-                    style={{ borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? '#fff' : '#FAFAFA', cursor: 'pointer' }}
-                  >
+                  <tr key={s.id} onClick={() => onSelectStartup(s)}
+                    style={{ borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? '#fff' : '#FAFAFA', cursor: 'pointer' }}>
                     <td style={{ padding: '11px 14px', fontWeight: 600 }}>
                       <div style={{ marginBottom: 2 }}>{s.nombre}</div>
                       {s.sector && <span style={{ fontSize: 11, background: '#F3F4F6', borderRadius: 5, padding: '2px 7px', fontWeight: 400 }}>{s.sector}</span>}
                     </td>
-                    <td style={{ padding: '11px 14px', color: '#555', fontSize: 12 }}>{s.fundadores || '—'}</td>
+                    <td style={{ padding: '11px 14px', color: s.fundadores ? '#555' : '#9CA3AF', fontSize: 12 }}>
+                      {s.fundadores || 'Sin registrar'}
+                    </td>
                     <td style={{ padding: '11px 14px', color: '#555', whiteSpace: 'nowrap' }}>{s.pais || '—'}</td>
                     <td style={{ padding: '11px 14px' }}>
                       <StatusBadge status={s.current_status || s.estado} small />
                     </td>
                     <td style={{ padding: '11px 14px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        {s.has_revenue                          && <span style={chip('#D1FAE5', '#065F46')}>R</span>}
-                        {s.has_funding                          && <span style={chip('#FEF3C7', '#92400E')}>F</span>}
-                        {(s.has_softlanding || s.softlanding)  && <span style={chip('#EDE9FE', '#5B21B6')}>S</span>}
+                        {s.has_revenue && (
+                          <Tip label="Revenue: Genera ventas">
+                            <span style={chip('#D1FAE5', '#065F46')}>R</span>
+                          </Tip>
+                        )}
+                        {s.has_funding && (
+                          <Tip label="Funding: Tiene inversión">
+                            <span style={chip('#FEF3C7', '#92400E')}>F</span>
+                          </Tip>
+                        )}
+                        {(s.has_softlanding || s.softlanding) && (
+                          <Tip label="Softlanding: Operando en el exterior">
+                            <span style={chip('#EDE9FE', '#5B21B6')}>S</span>
+                          </Tip>
+                        )}
                       </div>
                     </td>
-                    <td style={{ padding: '11px 14px', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '11px 14px', whiteSpace: 'nowrap', minWidth: 130 }}>
                       <RecencyDot color={s._recency.color} label={s._recency.label} />
                     </td>
                     <td style={{ padding: '11px 14px', color: '#555', whiteSpace: 'nowrap', fontSize: 12 }}>{s.owner_uv || '—'}</td>
@@ -235,18 +282,13 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
                       </span>
                     </td>
                     <td style={{ padding: '11px 14px' }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); onSelectStartup(s) }}
-                        style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer' }}
-                      >
+                      <button onClick={e => { e.stopPropagation(); onSelectStartup(s) }}
+                        style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer' }}>
                         Ver →
                       </button>
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
-                  <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: '#bbb', fontSize: 13 }}>Sin resultados.</td></tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -255,6 +297,7 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
 
       <div style={{ marginTop: 10, fontSize: 12, color: '#bbb', textAlign: 'right' }}>
         {filtered.length} de {startups.length} startups
+        {search && ` · búsqueda: "${search}"`}
       </div>
     </div>
   )
@@ -262,5 +305,5 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
 
 const chip = (bg, color) => ({
   fontSize: 10, fontWeight: 700, padding: '2px 6px',
-  borderRadius: 4, background: bg, color, display: 'inline-block',
+  borderRadius: 4, background: bg, color, display: 'inline-block', cursor: 'default',
 })
