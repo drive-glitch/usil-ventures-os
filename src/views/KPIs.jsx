@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Badge, KpiBar, PageHeader, Modal, Field, Input, Select, Btn, ESTADOS, Toast, useToast, ConfirmDialog } from '../components/ui'
+import { Badge, KpiBar, PageHeader, Modal, Field, Input, Select, Btn, ESTADOS, Toast, useToast, ConfirmDialog, HelpButton } from '../components/ui'
 
 const empty = { nombre: '', meta: '', actual: '0', responsable: '', estado: 'por_iniciar' }
 
@@ -59,12 +59,23 @@ export default function KPIs() {
     { label: 'Por iniciar',  count: items.filter(k => k.estado === 'por_iniciar').length,  bg: '#DBEAFE', color: '#1E40AF' },
   ]
 
-  const responsables = [...new Set(items.map(k => k.responsable))].filter(Boolean)
+  const EQUIPO_UV = ['Marcoantonio Pacheco', 'Leslie Ponce', 'Arturo Garro']
+  const expandedItems = items.flatMap(k =>
+    /todo|equipo/i.test(k.responsable || '') ? EQUIPO_UV.map(m => ({ ...k, responsable: m })) : [k]
+  )
+  const responsables = [...new Set(expandedItems.map(k => k.responsable))].filter(Boolean)
 
   return (
     <div>
       <PageHeader title="KPIs 2026" subtitle={`${items.length} indicadores totales`}
-        action={<Btn onClick={() => { setForm({...empty}); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo KPI</Btn>} />
+        action={<div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <HelpButton title="Métricas / KPIs">
+            Cada KPI tiene una <b>meta anual</b> y un <b>valor actual</b>. La barra muestra el % de avance.<br/>
+            Si el responsable es "Todo el equipo", el KPI aparece en la tabla de cada miembro del equipo UV.<br/>
+            Estados: <b>En ejecución</b> (verde), <b>En riesgo</b> (amarillo), <b>Retrasado</b> (rojo), <b>Por iniciar</b> (azul).
+          </HelpButton>
+          <Btn onClick={() => { setForm({...empty}); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo KPI</Btn>
+        </div>} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
         {pills.map((p, i) => p.count > 0 && (
@@ -99,7 +110,7 @@ export default function KPIs() {
             <thead><tr style={{ background: '#F9FAFB' }}>{['Responsable','KPIs','Avance promedio'].map(h => <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}</tr></thead>
             <tbody>
               {responsables.map((r, i) => {
-                const rk = items.filter(k => k.responsable === r)
+                const rk = expandedItems.filter(k => k.responsable === r)
                 const avg = Math.round(rk.reduce((a, k) => a + Math.min(100, k.meta > 0 ? (k.actual/k.meta)*100 : 0), 0) / rk.length)
                 return (
                   <tr key={r} style={{ borderBottom: '1px solid #F3F4F6', background: i%2===0?'#fff':'#FAFAFA' }}>

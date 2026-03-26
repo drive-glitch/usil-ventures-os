@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Badge, PageHeader, formatDate, CountdownChip, Modal, Field, Input, Select, Btn, ESTADOS, ETAPAS_HITO, localDate, Toast, useToast, ConfirmDialog } from '../components/ui'
+import { Badge, PageHeader, formatDate, CountdownChip, Modal, Field, Input, Select, Btn, ESTADOS, ETAPAS_HITO, localDate, Toast, useToast, ConfirmDialog, HelpButton } from '../components/ui'
 
 const empty = () => ({ nombre: '', programa: '', fecha: localDate(), responsable: '', estado: 'por_iniciar', etapa: '' })
 
@@ -62,7 +62,14 @@ export default function Hitos({ initialFilter = {} }) {
   return (
     <div>
       <PageHeader title="Hitos" subtitle={`${items.length} hitos registrados`}
-        action={<Btn onClick={() => { setForm(empty()); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo hito</Btn>} />
+        action={<div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <HelpButton title="Hitos">
+            <b>Hitos</b> son eventos clave del roadmap de cada programa.<br/>
+            El chip de <b>countdown</b> muestra días restantes (rojo si &lt;7 días).<br/>
+            La etapa define en qué momento del programa ocurre el hito.
+          </HelpButton>
+          <Btn onClick={() => { setForm(empty()); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo hito</Btn>
+        </div>} />
 
       <div style={{ marginBottom: 20 }}>
         <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} style={{ fontSize: 12, padding: '7px 10px', borderRadius: 7, border: '1px solid #D1D5DB', background: '#fff' }}>

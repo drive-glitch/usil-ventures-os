@@ -82,6 +82,7 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
   const [fPriority, setFPriority] = useState('')
   const [fFunding,  setFFunding]  = useState('')
   const [fRevenue,  setFRevenue]  = useState('')
+  const [fUsil,     setFUsil]     = useState('')
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -106,10 +107,11 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
     .filter(s => !fPriority || s.priority        === fPriority)
     .filter(s => fFunding === '' || (fFunding === 'si' ? s.has_funding  : !s.has_funding))
     .filter(s => fRevenue === '' || (fRevenue === 'si' ? s.has_revenue  : !s.has_revenue))
+    .filter(s => fUsil   === '' || (fUsil   === 'si' ? s.es_usil      : !s.es_usil))
 
   const kpis       = computeOverviewKPIs(startups)
-  const hasFilters = fStatus || fSector || fTier || fPriority || fFunding || fRevenue || search
-  const clearFn    = () => { setFStatus(''); setFSector(''); setFTier(''); setFPriority(''); setFFunding(''); setFRevenue(''); setSearch('') }
+  const hasFilters = fStatus || fSector || fTier || fPriority || fFunding || fRevenue || fUsil || search
+  const clearFn    = () => { setFStatus(''); setFSector(''); setFTier(''); setFPriority(''); setFFunding(''); setFRevenue(''); setFUsil(''); setSearch('') }
 
   if (loading) return <div style={{ color: '#888', fontSize: 14, padding: '40px 0' }}>Cargando...</div>
   if (error)   return <div style={{ color: '#EF4444', fontSize: 14, padding: '40px 0' }}>{error}</div>
@@ -217,6 +219,11 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
           <option value="si">Con ventas</option>
           <option value="no">Sin ventas</option>
         </select>
+        <select value={fUsil} onChange={e => setFUsil(e.target.value)} style={sel}>
+          <option value="">USIL / Externas</option>
+          <option value="si">Solo USIL</option>
+          <option value="no">Solo externas</option>
+        </select>
         {hasFilters && (
           <button onClick={clearFn} style={{ fontSize: 12, color: '#888', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
             Limpiar filtros
@@ -242,7 +249,10 @@ export default function Overview({ onSelectStartup, onAddStartup }) {
                   <tr key={s.id} onClick={() => onSelectStartup(s)}
                     style={{ borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? '#fff' : '#FAFAFA', cursor: 'pointer' }}>
                     <td style={{ padding: '11px 14px', fontWeight: 600 }}>
-                      <div style={{ marginBottom: 2 }}>{s.nombre}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        {s.nombre}
+                        {s.es_usil && <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: '#FEF3C7', color: '#92400E', letterSpacing: '0.04em' }}>USIL</span>}
+                      </div>
                       {s.sector && <span style={{ fontSize: 11, background: '#F3F4F6', borderRadius: 5, padding: '2px 7px', fontWeight: 400 }}>{s.sector}</span>}
                     </td>
                     <td style={{ padding: '11px 14px', color: s.fundadores ? '#555' : '#9CA3AF', fontSize: 12 }}>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Badge, PrioDot, PageHeader, formatDate, Modal, Field, Input, Select, Btn, ESTADOS, TRIMESTRES, Toast, useToast, ConfirmDialog } from '../components/ui'
+import { Badge, PrioDot, PageHeader, formatDate, Modal, Field, Input, Select, Btn, ESTADOS, TRIMESTRES, Toast, useToast, ConfirmDialog, HelpButton } from '../components/ui'
 
 const empty = { nombre: '', responsable: '', trimestre: 'Q2', estado: 'por_iniciar', prioridad: 'media', fecha_inicio: '', fecha_fin: '' }
 
@@ -99,7 +99,14 @@ export default function Programas({ initialFilter = {} }) {
   return (
     <div>
       <PageHeader title="Programas" subtitle={`${items.length} programas registrados`}
-        action={<Btn onClick={() => { setForm({...empty}); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo programa</Btn>} />
+        action={<div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <HelpButton title="Programas">
+            <b>Programas</b> son los ciclos de aceleración o incubación activos.<br/>
+            Filtra por trimestre con los chips Q1–Q4. Los contadores se actualizan según el filtro.<br/>
+            El campo <b>Responsable</b> puede ser una persona o "Todo el equipo".
+          </HelpButton>
+          <Btn onClick={() => { setForm({...empty}); setErrors({}); setModal({ mode: 'new' }) }}>+ Nuevo programa</Btn>
+        </div>} />
 
       {/* Multi-Q chips */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>

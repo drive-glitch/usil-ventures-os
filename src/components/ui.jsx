@@ -62,6 +62,29 @@ export function Toast({ message }) {
   )
 }
 
+// ─── Help Button ──────────────────────────────────────────────────────────────
+export function HelpButton({ title, children }) {
+  const [open, setOpen] = useState(false)
+  return <>
+    <button onClick={() => setOpen(true)}
+      style={{ width:24, height:24, borderRadius:'50%', border:'1px solid #D1D5DB', background:'#F9FAFB', cursor:'pointer', fontSize:12, fontWeight:700, color:'#6B7280', display:'inline-flex', alignItems:'center', justifyContent:'center', lineHeight:1, flexShrink:0 }}>
+      ?
+    </button>
+    {open && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:1002, display:'flex', alignItems:'center', justifyContent:'center' }}
+        onClick={e => { if (e.target===e.currentTarget) setOpen(false) }}>
+        <div style={{ background:'#fff', borderRadius:12, padding:'24px 28px', maxWidth:440, width:'90%', boxShadow:'0 10px 40px rgba(0,0,0,0.2)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+            <span style={{ fontSize:14, fontWeight:700 }}>💡 {title || 'Ayuda'}</span>
+            <button onClick={() => setOpen(false)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#999', lineHeight:1 }}>×</button>
+          </div>
+          <div style={{ fontSize:13, color:'#555', lineHeight:1.7 }}>{children}</div>
+        </div>
+      </div>
+    )}
+  </>
+}
+
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
 export function ConfirmDialog({ message, onConfirm, onCancel }) {
   if (!message) return null

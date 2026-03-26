@@ -12,7 +12,7 @@ const BINDER_ESTADOS = {
 
 const PLANTILLA_BINDER_URL = 'https://docs.google.com/document/d/1jchHjSmF_7AOVglbcfmcsvEo2E8JnzNh/copy'
 
-const empty = () => ({ nombre: '', tipo: 'Evento', fecha: localDate(), programa: '', lugar: '', modalidad: 'Presencial', binder_link: '', binder_estado: 'sin_binder' })
+const empty = () => ({ nombre: '', tipo: 'Evento', fecha: localDate(), programa: '', lugar: '', modalidad: 'Presencial', binder_link: '', binder_estado: 'sin_binder', inscritos: '', participantes: '', url_carpeta: '' })
 
 export default function Calendario({ initialFilter = {} }) {
   const [actividades, setActividades] = useState([])
@@ -110,7 +110,7 @@ export default function Calendario({ initialFilter = {} }) {
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
                 <tr style={{ background:'#F9FAFB', borderBottom:'1px solid #E8E7E2' }}>
-                  {['Evento','Tipo','Programa','Fecha','Lugar','Modalidad','Binder',''].map(h=>(
+                  {['Evento','Tipo','Programa','Fecha','Inscritos','Participantes','Carpeta','Binder',''].map(h=>(
                     <th key={h} style={{ padding:'11px 14px', textAlign:'left', fontSize:11, fontWeight:700, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -126,8 +126,9 @@ export default function Calendario({ initialFilter = {} }) {
                       </td>
                       <td style={{ padding:'10px 14px', color:'#555', fontSize:12 }}>{a.programa||'—'}</td>
                       <td style={{ padding:'10px 14px', fontWeight:600, whiteSpace:'nowrap' }}>{a.fecha}</td>
-                      <td style={{ padding:'10px 14px', color:'#555', fontSize:12 }}>{a.lugar||'—'}</td>
-                      <td style={{ padding:'10px 14px', fontSize:12, color:'#555' }}>{a.modalidad}</td>
+                      <td style={{ padding:'10px 14px', color:'#555', fontSize:12, textAlign:'center' }}>{a.inscritos||'—'}</td>
+                      <td style={{ padding:'10px 14px', color:'#555', fontSize:12, textAlign:'center' }}>{a.participantes||'—'}</td>
+                      <td style={{ padding:'10px 14px', fontSize:12 }}>{a.url_carpeta ? <a href={a.url_carpeta} target="_blank" rel="noreferrer" style={{color:'#1D4ED8',fontWeight:600}}>📂 Abrir</a> : '—'}</td>
                       <td style={{ padding:'10px 14px' }}>
                         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                           <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:5, background:bs.bg, color:bs.color }}>{bs.label}</span>
@@ -247,6 +248,17 @@ export default function Calendario({ initialFilter = {} }) {
             <Select value={form.modalidad} onChange={e=>setForm(f=>({...f,modalidad:e.target.value}))}>
               <option>Presencial</option><option>Virtual</option><option>Híbrido</option>
             </Select>
+          </Field>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <Field label="Inscritos">
+              <Input type="number" value={form.inscritos||''} onChange={e=>setForm(f=>({...f,inscritos:e.target.value}))} placeholder="0" />
+            </Field>
+            <Field label="Participantes">
+              <Input type="number" value={form.participantes||''} onChange={e=>setForm(f=>({...f,participantes:e.target.value}))} placeholder="0" />
+            </Field>
+          </div>
+          <Field label="URL Carpeta (Drive)">
+            <Input value={form.url_carpeta||''} onChange={e=>setForm(f=>({...f,url_carpeta:e.target.value}))} placeholder="https://drive.google.com/..." />
           </Field>
 
           {/* Binder section */}

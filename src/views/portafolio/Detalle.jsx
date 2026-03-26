@@ -56,7 +56,7 @@ const EMPTY_STARTUP_FORM = s => ({
   sector: s.sector || '', pais: s.pais || '', city: s.city || '',
   current_status: s.current_status || s.estado || 'activa',
   priority: s.priority || 'media', portfolio_tier: s.portfolio_tier || 'seguimiento',
-  owner_uv: s.owner_uv || '', has_softlanding: !!(s.has_softlanding || s.softlanding),
+  owner_uv: s.owner_uv || '', has_softlanding: !!(s.has_softlanding || s.softlanding), es_usil: !!s.es_usil,
   has_revenue: !!s.has_revenue, has_funding: !!s.has_funding,
   revenue_latest: s.revenue_latest || '', funding_total: s.funding_total || '',
   revenue_currency: s.revenue_currency || 'PEN', funding_currency: s.funding_currency || 'PEN',
@@ -139,6 +139,11 @@ function StartupEditModal({ startup, onSave, onClose }) {
         </Field>
         <Field label="Softlanding">
           <Select value={form.has_softlanding ? 'si' : 'no'} onChange={fb('has_softlanding')}>
+            <option value="no">No</option><option value="si">Sí</option>
+          </Select>
+        </Field>
+        <Field label="Startup USIL">
+          <Select value={form.es_usil ? 'si' : 'no'} onChange={fb('es_usil')}>
             <option value="no">No</option><option value="si">Sí</option>
           </Select>
         </Field>
@@ -497,6 +502,7 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
               {startup.has_revenue     && <span style={S.chip('#D1FAE5','#065F46')}>Revenue</span>}
               {startup.has_funding     && <span style={S.chip('#FEF3C7','#92400E')}>Funding</span>}
               {(startup.has_softlanding || startup.softlanding) && <span style={S.chip('#EDE9FE','#5B21B6')}>Softlanding</span>}
+              {startup.es_usil && <span style={S.chip('#FEF3C7','#92400E')}>USIL</span>}
             </div>
             {[
               ['Revenue',        startup.revenue_latest  ? formatCurrency(startup.revenue_latest, startup.revenue_currency)  : null],
