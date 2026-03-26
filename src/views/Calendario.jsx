@@ -106,7 +106,7 @@ export default function Calendario({ initialFilter = {} }) {
       {vistaEventos ? (
         <div>
           <div style={{ fontSize:12, color:'#888', marginBottom:16 }}>Todos los eventos del año · estado del binder por evento</div>
-          <div style={{ background:'#fff', border:'1px solid #E8E7E2', borderRadius:10, overflow:'auto' }}>
+          <div style={{ background:'#fff', border:'1px solid #E8E7E2', borderRadius:10, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
                 <tr style={{ background:'#F9FAFB', borderBottom:'1px solid #E8E7E2' }}>
@@ -171,19 +171,22 @@ export default function Calendario({ initialFilter = {} }) {
               {cells.map((day, i) => {
                 const items = day ? getItems(day) : []
                 return (
-                  <div key={i} style={{ minHeight:90, padding:'6px 8px', borderRight:(i+1)%7===0?'none':'1px solid #F3F4F6', borderBottom:i<cells.length-7?'1px solid #F3F4F6':'none', background:day&&isToday(day)?'#EFF6FF':'#fff' }}>
+                  <div key={i} style={{ minHeight:80, padding:'4px 5px', borderRight:(i+1)%7===0?'none':'1px solid #F3F4F6', borderBottom:i<cells.length-7?'1px solid #F3F4F6':'none', background:day&&isToday(day)?'#EFF6FF':'#fff', overflow:'hidden' }}>
                     {day && (
                       <>
-                        <div style={{ fontSize:12, fontWeight:isToday(day)?700:400, color:isToday(day)?'#1D4ED8':'#374151', marginBottom:4 }}>{day}</div>
+                        <div style={{ fontSize:11, fontWeight:isToday(day)?700:400, color:isToday(day)?'#1D4ED8':'#374151', marginBottom:3 }}>{day}</div>
                         <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                          {items.map((item,j) => {
+                          {items.slice(0,2).map((item,j) => {
                             const color = item._t==='hito' ? '#374151' : (TIPO_ACTIVIDAD[item.tipo]||'#6B7280')
                             return (
-                              <div key={j} onClick={()=>setDetalle(item)} style={{ background:color+'20', color, border:`1px solid ${color}40`, borderRadius:4, padding:'2px 5px', fontSize:10, fontWeight:600, cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', lineHeight:1.4 }}>
-                                {item._t==='hito'?'● ':''}{item.nombre}
+                              <div key={j} onClick={()=>setDetalle(item)} style={{ background:color+'20', color, border:`1px solid ${color}40`, borderRadius:3, padding:'1px 4px', fontSize:9, fontWeight:600, cursor:'pointer', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', lineHeight:1.5 }}>
+                                {item._t==='hito'?'●':''}{item.nombre}
                               </div>
                             )
                           })}
+                          {items.length > 2 && (
+                            <div style={{ fontSize:9, color:'#888', fontWeight:600, paddingLeft:2 }}>+{items.length-2} más</div>
+                          )}
                         </div>
                       </>
                     )}

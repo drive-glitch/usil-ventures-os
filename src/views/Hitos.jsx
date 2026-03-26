@@ -78,7 +78,7 @@ export default function Hitos({ initialFilter = {} }) {
         </select>
       </div>
 
-      <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, overflow: 'auto' }}>
+      <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E8E7E2' }}>

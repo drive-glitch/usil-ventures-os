@@ -104,7 +104,7 @@ export default function KPIs() {
       </div>
 
       {responsables.length > 0 && (
-        <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <div style={{ padding: '12px 18px', borderBottom: '1px solid #F3F4F6', fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Avance por responsable</div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead><tr style={{ background: '#F9FAFB' }}>{['Responsable','KPIs','Avance promedio'].map(h => <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>)}</tr></thead>

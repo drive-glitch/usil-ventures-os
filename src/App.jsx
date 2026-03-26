@@ -189,8 +189,8 @@ export default function App() {
       {/* Main content */}
       <main style={{
         flex: 1,
-        padding: isMobile ? '68px 16px 32px' : '36px 40px',
-        maxWidth: 1100, overflowX: 'hidden', width: '100%',
+        padding: isMobile ? '68px 12px 32px' : '36px 40px',
+        maxWidth: 1100, minWidth: 0, width: '100%',
       }}>
         {view === 'dashboard'  && <Dashboard navigate={navigate} />}
         {view === 'programas'  && <Programas initialFilter={viewParams} />}
