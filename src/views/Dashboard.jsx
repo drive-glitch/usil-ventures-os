@@ -38,12 +38,13 @@ function MiniBar({ label, value, total, color }) {
   )
 }
 
-export default function Dashboard({ setView }) {
+export default function Dashboard({ navigate }) {
   const [programas, setProgramas] = useState([])
   const [hitos, setHitos]         = useState([])
   const [kpis, setKpis]           = useState([])
   const [startups, setStartups]   = useState([])
   const [loading, setLoading]     = useState(true)
+  const [hoverCard, setHoverCard] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -71,10 +72,27 @@ export default function Dashboard({ setView }) {
   const eventosKpi = kpis.find(k => k.nombre === 'Eventos del ecosistema')
 
   const stats = [
-    { label: 'Programas activos',  value: programas.filter(p => p.estado === 'en_ejecucion').length, total: programas.length, color: '#059669', icon: '📋' },
-    { label: 'Necesitan atención', value: alertas.length, total: programas.length,                    color: '#DC2626',        icon: '⚠️' },
-    { label: 'Hitos próximos 30d', value: hitos.filter(h => { const d = daysFrom(h.fecha); return d >= 0 && d <= 30 }).length, color: '#1D4ED8', icon: '🎯' },
-    { label: 'Eventos ejecutados', value: eventosKpi?.actual ?? 0, total: eventosKpi?.meta,           color: '#D97706',        icon: '🎪' },
+    {
+      label: 'Programas activos', value: programas.filter(p => p.estado === 'en_ejecucion').length,
+      total: programas.length, color: '#059669', icon: '📋',
+      onClick: () => navigate('programas', { estado: 'en_ejecucion' }),
+    },
+    {
+      label: 'Necesitan atención', value: alertas.length,
+      total: programas.length, color: '#DC2626', icon: '⚠️',
+      onClick: () => navigate('programas', { estado: 'retrasado' }),
+    },
+    {
+      label: 'Hitos próximos 30d',
+      value: hitos.filter(h => { const d = daysFrom(h.fecha); return d >= 0 && d <= 30 }).length,
+      color: '#1D4ED8', icon: '🎯',
+      onClick: () => navigate('hitos', {}),
+    },
+    {
+      label: 'Eventos ejecutados', value: eventosKpi?.actual ?? 0,
+      total: eventosKpi?.meta, color: '#D97706', icon: '🎪',
+      onClick: () => navigate('calendario', { vistaEventos: true }),
+    },
   ]
 
   const portActivas     = startups.filter(s => s.current_status === 'activa' || s.estado === 'activa').length
@@ -96,10 +114,19 @@ export default function Dashboard({ setView }) {
         <p style={{ fontSize: 13, color: '#888', marginTop: 4, marginBottom: 0 }}>Operación 2026 · Q1 en cierre · Foco en Q2</p>
       </div>
 
-      {/* KPI cards */}
+      {/* KPI cards — clickeables */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 18 }}>
         {stats.map((s, i) => (
-          <div key={i} style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px' }}>
+          <div key={i} onClick={s.onClick}
+            onMouseEnter={() => setHoverCard(i)}
+            onMouseLeave={() => setHoverCard(null)}
+            style={{
+              background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '16px 18px',
+              cursor: 'pointer',
+              boxShadow: hoverCard === i ? '0 2px 10px rgba(0,0,0,0.08)' : 'none',
+              transform: hoverCard === i ? 'translateY(-2px)' : 'none',
+              transition: 'all 0.15s ease',
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1.4 }}>{s.label}</div>
               <span style={{ fontSize: 18 }}>{s.icon}</span>
@@ -116,7 +143,7 @@ export default function Dashboard({ setView }) {
       <div style={{ background: '#fff', border: '1px solid #E8E7E2', borderRadius: 10, padding: '18px 20px', marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🚀 Portafolio de startups</span>
-          <button onClick={() => setView('portafolio')} style={{ fontSize: 12, color: '#1D4ED8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Ver todas →</button>
+          <button onClick={() => navigate('portafolio')} style={{ fontSize: 12, color: '#1D4ED8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Ver todas →</button>
         </div>
         <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
           <DonutChart segments={donutData} size={110} />
@@ -143,7 +170,10 @@ export default function Dashboard({ setView }) {
           {alertas.length === 0
             ? <p style={{ fontSize: 13, color: '#999', margin: 0 }}>Sin alertas activas.</p>
             : alertas.map(p => (
-              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #F3F4F6' }}>
+              <div key={p.id} onClick={() => navigate('programas', { estado: p.estado })}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', borderRadius: 4 }}
+                onMouseEnter={e => e.currentTarget.style.background = '#FFF5F5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{p.nombre}</div>
                   <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{p.responsable} · {p.trimestre}</div>
@@ -162,7 +192,10 @@ export default function Dashboard({ setView }) {
           {proximos.length === 0
             ? <p style={{ fontSize: 13, color: '#999', margin: 0 }}>No hay hitos próximos.</p>
             : proximos.map(h => (
-              <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #F3F4F6' }}>
+              <div key={h.id} onClick={() => navigate('hitos', {})}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', borderRadius: 4 }}
+                onMouseEnter={e => e.currentTarget.style.background = '#F0F9FF'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{h.nombre}</div>
                   <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{h.programa?.split(' ').slice(0,3).join(' ')}...</div>
@@ -181,7 +214,7 @@ export default function Dashboard({ setView }) {
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📊 Métricas anuales 2026</span>
-          <button onClick={() => setView('kpis')} style={{ fontSize: 12, color: '#1D4ED8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Ver todas →</button>
+          <button onClick={() => navigate('kpis')} style={{ fontSize: 12, color: '#1D4ED8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Ver todas →</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
           {kpis.map(k => (

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 export const ESTADOS = {
   en_ejecucion: { label: 'En ejecución', bg: '#D1FAE5', text: '#065F46', border: '#6EE7B7' },
   por_iniciar:  { label: 'Por iniciar',  bg: '#DBEAFE', text: '#1E40AF', border: '#93C5FD' },
@@ -21,6 +23,62 @@ export const TIPO_ACTIVIDAD = {
   Mentoría: '#10B981',
 }
 
+export const ETAPAS_HITO = [
+  'Convocatoria','Inicio','Kick-off','Evento','Taller',
+  'Lanzamiento','Evaluación','Cierre','Demo Day','Otro',
+]
+
+// ─── Date helper (timezone-safe) ──────────────────────────────────────────────
+export function localDate() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+export function useToast() {
+  const [toast, setToast] = useState(null)
+  const showToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+  return { toast, showToast }
+}
+
+export function Toast({ message }) {
+  if (!message) return null
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24,
+      background: '#1a1a18', color: '#fff',
+      padding: '12px 20px', borderRadius: 8,
+      fontSize: 13, fontWeight: 600, zIndex: 9999,
+      boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+      display: 'flex', alignItems: 'center', gap: 8,
+      pointerEvents: 'none',
+    }}>
+      <span style={{ color: '#4ade80', fontSize: 14 }}>✓</span>
+      {message}
+    </div>
+  )
+}
+
+// ─── Confirm Dialog ───────────────────────────────────────────────────────────
+export function ConfirmDialog({ message, onConfirm, onCancel }) {
+  if (!message) return null
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', maxWidth: 380, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+        <p style={{ fontSize: 14, margin: '0 0 20px', lineHeight: 1.6, color: '#1a1a18' }}>{message}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <Btn variant="secondary" onClick={onCancel}>Cancelar</Btn>
+          <Btn variant="danger" onClick={onConfirm}>Eliminar</Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Base components ──────────────────────────────────────────────────────────
 export function Badge({ estado, small }) {
   const s = ESTADOS[estado] || ESTADOS.cerrado
   return (
@@ -55,11 +113,12 @@ export function Modal({ title, onClose, children }) {
   )
 }
 
-export function Field({ label, children }) {
+export function Field({ label, children, error }) {
   return (
     <div style={{ marginBottom: 15 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 5 }}>{label}</label>
+      <label style={{ fontSize: 12, fontWeight: 600, color: error ? '#EF4444' : '#555', display: 'block', marginBottom: 5 }}>{label}</label>
       {children}
+      {error && <div style={{ fontSize: 11, color: '#EF4444', marginTop: 4 }}>{error}</div>}
     </div>
   )
 }
@@ -70,7 +129,11 @@ export function Input(props) { return <input {...props} style={{ ...inp, ...prop
 export function Select({ children, ...props }) { return <select {...props} style={{ ...inp, ...props.style }}>{children}</select> }
 
 export function Btn({ children, onClick, variant = 'primary', style }) {
-  const v = { primary: { background: '#1D4ED8', color: '#fff', border: 'none' }, secondary: { background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB' }, danger: { background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' } }
+  const v = {
+    primary:   { background: '#1D4ED8', color: '#fff', border: 'none' },
+    secondary: { background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB' },
+    danger:    { background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5' },
+  }
   return <button onClick={onClick} style={{ padding: '9px 18px', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', ...v[variant], ...style }}>{children}</button>
 }
 

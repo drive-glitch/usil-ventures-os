@@ -17,6 +17,7 @@ const NAV = [
 
 export default function App() {
   const [view, setView]         = useState('dashboard')
+  const [viewParams, setViewParams] = useState({})
   const [menuOpen, setMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
 
@@ -26,7 +27,11 @@ export default function App() {
     return () => window.removeEventListener('resize', handle)
   }, [])
 
-  const navigate = (id) => { setView(id); setMenuOpen(false) }
+  const navigate = (id, params = {}) => {
+    setView(id)
+    setViewParams(params)
+    setMenuOpen(false)
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter','Helvetica Neue',sans-serif", background: '#F7F6F2', color: '#1a1a18' }}>
@@ -103,11 +108,11 @@ export default function App() {
         padding: isMobile ? '68px 16px 32px' : '36px 40px',
         maxWidth: 1100, overflowX: 'hidden', width: '100%',
       }}>
-        {view === 'dashboard'  && <Dashboard setView={navigate} />}
-        {view === 'programas'  && <Programas />}
-        {view === 'hitos'      && <Hitos />}
+        {view === 'dashboard'  && <Dashboard navigate={navigate} />}
+        {view === 'programas'  && <Programas initialFilter={viewParams} />}
+        {view === 'hitos'      && <Hitos initialFilter={viewParams} />}
         {view === 'kpis'       && <KPIs />}
-        {view === 'calendario' && <Calendario />}
+        {view === 'calendario' && <Calendario initialFilter={viewParams} />}
         {view === 'portafolio' && <Portafolio />}
       </main>
     </div>

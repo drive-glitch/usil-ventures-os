@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Card, Modal, Field, Input, Select, Btn,
   StatusBadge, RecencyDot, PrioDot, EmptyState, CountdownChip, formatDate,
+  Toast, useToast, ConfirmDialog, localDate,
 } from '../../components/ui'
 import {
   fetchPrograms, saveProgram, deleteProgram,
@@ -157,7 +158,7 @@ function StartupEditModal({ startup, onSave, onClose }) {
 
 // ─── Update form ──────────────────────────────────────────────────────────────
 const EMPTY_UPDATE = startupId => ({
-  startup_id: startupId, update_date: new Date().toISOString().split('T')[0],
+  startup_id: startupId, update_date: localDate(),
   source: 'manual', submitted_by: '', current_status: 'activa',
   revenue_current: '', funding_new: '', milestone: '',
   risk_level: 'bajo', support_needed: '', notes: '',
@@ -291,9 +292,10 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
   const [loading,  setLoading]    = useState(true)
 
   const [modal, setModal] = useState(null)
-  // modal: null | 'editStartup' | 'addUpdate' | 'addTask' | 'editTask' | 'addProgram'
   const [editingTask, setEditingTask]       = useState(null)
   const [editingProgram, setEditingProgram] = useState(null)
+  const [confirm, setConfirm]     = useState(null)
+  const { toast, showToast }      = useToast()
 
   const loadRelated = useCallback(async (id) => {
     const [p, u, c, t] = await Promise.all([
@@ -314,14 +316,17 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
     const fresh = await fetchStartupById(startup.id)
     setStartup(fresh)
     setModal(null)
+    showToast('Startup actualizada correctamente')
   }
 
   const afterRelated = () => { loadRelated(startup.id); setModal(null); setEditingTask(null); setEditingProgram(null) }
+  const afterUpdate  = () => { loadRelated(startup.id); setModal(null); showToast('Update registrado correctamente') }
 
-  const confirmDelete = async () => {
-    if (!confirm(`¿Eliminar "${startup.nombre}" y todos sus datos?`)) return
-    await deleteStartup(startup.id)
-    onDeleted()
+  const confirmDelete = () => {
+    setConfirm({
+      message: `¿Eliminar "${startup.nombre}" y todos sus datos? Esta acción no se puede deshacer.`,
+      onConfirm: async () => { await deleteStartup(startup.id); onDeleted() },
+    })
   }
 
   const recency  = startup._recency || getRecency(startup.last_update_at)
@@ -408,7 +413,7 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button style={S.btnEdit}   onClick={() => { setEditingProgram(p); setModal('addProgram') }}>Editar</button>
-                    <button style={S.btnDanger} onClick={async () => { if (confirm('¿Eliminar programa?')) { await deleteProgram(p.id); loadRelated(startup.id) } }}>×</button>
+                    <button style={S.btnDanger} onClick={() => setConfirm({ message: `¿Eliminar programa "${p.program_name}"?`, onConfirm: async () => { await deleteProgram(p.id); loadRelated(startup.id); showToast('Programa eliminado') } })}>×</button>
                   </div>
                 </div>
               ))
@@ -431,7 +436,7 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
                       {u.submitted_by && <span style={{ fontSize: 11, color: '#aaa' }}>{u.submitted_by}</span>}
                     </div>
                     <button style={S.btnDanger}
-                      onClick={async () => { if (confirm('¿Eliminar update?')) { await deleteUpdate(u.id); loadRelated(startup.id) } }}>×</button>
+                      onClick={() => setConfirm({ message: '¿Eliminar este update?', onConfirm: async () => { await deleteUpdate(u.id); loadRelated(startup.id); showToast('Update eliminado') } })}>×</button>
                   </div>
                   {u.milestone && <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>🏁 {u.milestone}</div>}
                   {(u.revenue_current || u.funding_new) && (
@@ -512,7 +517,7 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
         <StartupEditModal startup={startup} onSave={afterEdit} onClose={() => setModal(null)} />
       )}
       {modal === 'addUpdate' && (
-        <UpdateModal startupId={startup.id} onSave={afterRelated} onClose={() => setModal(null)} />
+        <UpdateModal startupId={startup.id} onSave={afterUpdate} onClose={() => setModal(null)} />
       )}
       {(modal === 'addTask' || modal === 'editTask') && (
         <TaskModal startupId={startup.id} task={editingTask} onSave={afterRelated} onClose={() => { setModal(null); setEditingTask(null) }} />
@@ -520,6 +525,13 @@ export default function Detalle({ startup: initialStartup, onBack, onDeleted }) 
       {modal === 'addProgram' && (
         <ProgramModal startupId={startup.id} program={editingProgram} onSave={afterRelated} onClose={() => { setModal(null); setEditingProgram(null) }} />
       )}
+
+      <ConfirmDialog
+        message={confirm?.message}
+        onConfirm={() => { confirm.onConfirm(); setConfirm(null) }}
+        onCancel={() => setConfirm(null)}
+      />
+      <Toast message={toast} />
     </div>
   )
 }
