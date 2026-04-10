@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Badge, PrioDot, PageHeader, formatDate, Modal, Field, Input, Select, Btn, ESTADOS, TRIMESTRES, Toast, useToast, ConfirmDialog, HelpButton } from '../components/ui'
+import { Badge, PrioDot, PageHeader, formatDate, Modal, Field, Input, Select, Btn, ESTADOS, TRIMESTRES, Toast, useToast, ConfirmDialog, HelpButton, StatusSelect, GearBtn, ResponsableSelect } from '../components/ui'
 
 const empty = { nombre: '', responsable: '', trimestre: 'Q2', estado: 'por_iniciar', prioridad: 'media', fecha_inicio: '', fecha_fin: '' }
 
@@ -76,6 +76,18 @@ export default function Programas({ initialFilter = {} }) {
     else await supabase.from('programas').update(form).eq('id', modal.item.id)
     setModal(null)
     showToast(`Programa ${modal.mode === 'new' ? 'creado' : 'actualizado'} correctamente`)
+    load()
+  }
+
+  const saveEstado = async (id, estado) => {
+    await supabase.from('programas').update({ estado }).eq('id', id)
+    showToast('Estado actualizado')
+    load()
+  }
+
+  const saveHitoEstado = async (id, estado) => {
+    await supabase.from('hitos').update({ estado }).eq('id', id)
+    showToast('Hito actualizado')
     load()
   }
 
@@ -160,7 +172,7 @@ export default function Programas({ initialFilter = {} }) {
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a18' }}>{p.nombre}</span>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Badge estado={p.estado} small />
+                      <StatusSelect estado={p.estado} onChange={e => saveEstado(p.id, e)} />
                       <span style={{ fontSize: 11, background: '#F3F4F6', borderRadius: 5, padding: '2px 7px', color: '#555', fontWeight: 500 }}>{p.trimestre}</span>
                     </div>
                   </div>
@@ -192,8 +204,7 @@ export default function Programas({ initialFilter = {} }) {
                     </button>
                   ) : <span />}
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => { setForm({...p}); setErrors({}); setModal({ mode: 'edit', item: p }) }}
-                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer' }}>Editar</button>
+                    <GearBtn onClick={() => { setForm({...p}); setErrors({}); setModal({ mode: 'edit', item: p }) }} />
                     <button onClick={() => del(p.id, p.nombre)}
                       style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid #FCA5A5', background: '#FEF2F2', cursor: 'pointer', color: '#991B1B' }}>×</button>
                   </div>
@@ -206,7 +217,7 @@ export default function Programas({ initialFilter = {} }) {
                     <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #F0EFE9', fontSize: 12 }}>
                       <span><strong>{h.nombre}</strong> {h.etapa && <span style={{ color: '#888' }}>· {h.etapa}</span>}</span>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <Badge estado={h.estado} small />
+                        <StatusSelect estado={h.estado} onChange={e => saveHitoEstado(h.id, e)} />
                         <span style={{ fontSize: 11, color: '#bbb' }}>{formatDate(h.fecha)}</span>
                       </div>
                     </div>
@@ -232,7 +243,7 @@ export default function Programas({ initialFilter = {} }) {
               style={errors.nombre ? { borderColor: '#EF4444' } : {}} />
           </Field>
           <Field label="Responsable">
-            <Input value={form.responsable} onChange={e => setForm(f => ({...f, responsable: e.target.value}))} placeholder="Ej: Leslie Ponce, Todo el equipo" />
+            <ResponsableSelect value={form.responsable || ''} onChange={v => setForm(f => ({...f, responsable: v}))} />
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Field label="Trimestre">

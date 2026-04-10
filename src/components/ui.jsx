@@ -230,6 +230,55 @@ export function EmptyState({ message = 'Sin resultados', action }) {
   )
 }
 
+// ─── Shared team list ────────────────────────────────────────────────────────
+export const EQUIPO_UV = ['Marcoantonio Pacheco', 'Leslie Ponce', 'Arturo Garro']
+
+// Inline status dropdown — looks like a badge but is selectable
+export function StatusSelect({ estado, onChange }) {
+  const s = ESTADOS[estado] || ESTADOS.cerrado
+  return (
+    <select value={estado} onChange={e => onChange(e.target.value)}
+      onClick={e => e.stopPropagation()}
+      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}`, borderRadius: 6, padding: '2px 7px', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none' }}>
+      {Object.entries(ESTADOS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+    </select>
+  )
+}
+
+// Gear icon button replacing "Editar"
+export function GearBtn({ onClick }) {
+  return (
+    <button onClick={onClick} title="Editar"
+      style={{ fontSize: 13, padding: '3px 7px', borderRadius: 5, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer', lineHeight: 1 }}>
+      ⚙
+    </button>
+  )
+}
+
+// Responsable dropdown with team + free-text option
+export function ResponsableSelect({ value, onChange }) {
+  const OPTS = [...EQUIPO_UV, 'Todo el equipo']
+  const [custom, setCustom] = useState(!OPTS.includes(value) && !!value)
+  const handleSel = e => {
+    if (e.target.value === '__otro__') { setCustom(true); onChange('') }
+    else { setCustom(false); onChange(e.target.value) }
+  }
+  const selVal = custom ? '__otro__' : (OPTS.includes(value) ? value : '')
+  return (
+    <div>
+      <select value={selVal} onChange={handleSel} style={{ ...inp, marginBottom: custom ? 6 : 0 }}>
+        <option value="">— Sin asignar —</option>
+        {OPTS.map(m => <option key={m} value={m}>{m}</option>)}
+        <option value="__otro__">➕ Agregar persona...</option>
+      </select>
+      {custom && (
+        <input value={value} onChange={e => onChange(e.target.value)}
+          placeholder="Nombre completo" style={inp} autoFocus />
+      )}
+    </div>
+  )
+}
+
 export function PageHeader({ title, subtitle, action }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>

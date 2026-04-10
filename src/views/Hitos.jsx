@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Badge, PageHeader, formatDate, CountdownChip, Modal, Field, Input, Select, Btn, ESTADOS, ETAPAS_HITO, localDate, Toast, useToast, ConfirmDialog, HelpButton } from '../components/ui'
+import { Badge, PageHeader, formatDate, CountdownChip, Modal, Field, Input, Select, Btn, ESTADOS, ETAPAS_HITO, localDate, Toast, useToast, ConfirmDialog, HelpButton, StatusSelect, GearBtn, ResponsableSelect } from '../components/ui'
 
 const empty = () => ({ nombre: '', programa: '', fecha: localDate(), responsable: '', estado: 'por_iniciar', etapa: '' })
 
@@ -43,6 +43,12 @@ export default function Hitos({ initialFilter = {} }) {
     else await supabase.from('hitos').update(form).eq('id', modal.item.id)
     setModal(null)
     showToast(`Hito ${modal.mode === 'new' ? 'creado' : 'actualizado'} correctamente`)
+    load()
+  }
+
+  const saveEstado = async (id, estado) => {
+    await supabase.from('hitos').update({ estado }).eq('id', id)
+    showToast('Estado actualizado')
     load()
   }
 
@@ -96,10 +102,10 @@ export default function Hitos({ initialFilter = {} }) {
                 <td style={{ padding: '11px 14px', color: '#555', whiteSpace: 'nowrap' }}>{h.responsable}</td>
                 <td style={{ padding: '11px 14px', fontWeight: 600, whiteSpace: 'nowrap', minWidth: 110 }}>{formatDate(h.fecha)}</td>
                 <td style={{ padding: '11px 14px' }}>{h.fecha && <CountdownChip fecha={h.fecha} />}</td>
-                <td style={{ padding: '11px 14px' }}><Badge estado={h.estado} small /></td>
+                <td style={{ padding: '11px 14px' }}><StatusSelect estado={h.estado} onChange={e => saveEstado(h.id, e)} /></td>
                 <td style={{ padding: '11px 14px' }}>
                   <div style={{ display: 'flex', gap: 4 }}>
-                    <button onClick={() => { setForm({...h}); setErrors({}); setModal({ mode: 'edit', item: h }) }} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: '1px solid #D1D5DB', background: '#F9FAFB', cursor: 'pointer' }}>Editar</button>
+                    <GearBtn onClick={() => { setForm({...h}); setErrors({}); setModal({ mode: 'edit', item: h }) }} />
                     <button onClick={() => del(h.id, h.nombre)} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 5, border: '1px solid #FCA5A5', background: '#FEF2F2', cursor: 'pointer', color: '#991B1B' }}>×</button>
                   </div>
                 </td>
@@ -137,7 +143,7 @@ export default function Hitos({ initialFilter = {} }) {
             </Field>
           </div>
           <Field label="Responsable">
-            <Input value={form.responsable} onChange={e => setForm(f => ({...f, responsable: e.target.value}))} />
+            <ResponsableSelect value={form.responsable || ''} onChange={v => setForm(f => ({...f, responsable: v}))} />
           </Field>
           <Field label="Estado">
             <Select value={form.estado} onChange={e => setForm(f => ({...f, estado: e.target.value}))}>

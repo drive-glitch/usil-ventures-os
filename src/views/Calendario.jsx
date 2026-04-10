@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { PageHeader, Modal, Field, Input, Select, Btn, TIPO_ACTIVIDAD, localDate, Toast, useToast, ConfirmDialog } from '../components/ui'
+import { PageHeader, Modal, Field, Input, Select, Btn, TIPO_ACTIVIDAD, localDate, Toast, useToast, ConfirmDialog, ResponsableSelect } from '../components/ui'
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 const DIAS  = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
@@ -12,7 +12,7 @@ const BINDER_ESTADOS = {
 
 const PLANTILLA_BINDER_URL = 'https://docs.google.com/document/d/1jchHjSmF_7AOVglbcfmcsvEo2E8JnzNh/copy'
 
-const empty = () => ({ nombre: '', tipo: 'Evento', fecha: localDate(), programa: '', lugar: '', modalidad: 'Presencial', binder_link: '', binder_estado: 'sin_binder', inscritos: '', participantes: '', url_carpeta: '' })
+const empty = () => ({ nombre: '', tipo: 'Evento', fecha: localDate(), programa: '', lugar: '', modalidad: 'Presencial', responsable: '', binder_link: '', binder_estado: 'sin_binder', inscritos: '', participantes: '', url_carpeta: '' })
 
 export default function Calendario({ initialFilter = {} }) {
   const [actividades, setActividades] = useState([])
@@ -26,7 +26,16 @@ export default function Calendario({ initialFilter = {} }) {
   const [anio, setAnio]   = useState(new Date().getFullYear())
   const [vistaEventos, setVistaEventos] = useState(initialFilter.vistaEventos || false)
   const [confirm, setConfirm]         = useState(null)
+  const [metaEventos, setMetaEventos] = useState(() => parseInt(localStorage.getItem('usil_meta_eventos') || '0'))
+  const [editMeta, setEditMeta]       = useState(false)
   const { toast, showToast }          = useToast()
+
+  const saveMeta = (v) => {
+    const n = parseInt(v) || 0
+    setMetaEventos(n)
+    localStorage.setItem('usil_meta_eventos', String(n))
+    setEditMeta(false)
+  }
 
   useEffect(() => { load() }, [])
 
@@ -93,6 +102,27 @@ export default function Calendario({ initialFilter = {} }) {
 
   return (
     <div>
+      <div style={{ display:'flex', gap:12, alignItems:'center', marginBottom:8, flexWrap:'wrap' }}>
+        <div style={{ background:'#fff', border:'1px solid #E8E7E2', borderRadius:9, padding:'10px 16px', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase' }}>Eventos totales</span>
+          <span style={{ fontSize:22, fontWeight:700, color:'#1D4ED8' }}>{actividades.length}</span>
+          {metaEventos > 0 && <>
+            <span style={{ fontSize:13, color:'#bbb' }}>/ {metaEventos}</span>
+            <div style={{ width:80, height:5, background:'#F0EFE9', borderRadius:3, overflow:'hidden' }}>
+              <div style={{ height:'100%', width:`${Math.min(100,(actividades.length/metaEventos)*100)}%`, background:'#1D4ED8', borderRadius:3 }} />
+            </div>
+          </>}
+          {!editMeta
+            ? <button onClick={() => setEditMeta(true)} style={{ fontSize:11, color:'#888', background:'none', border:'none', cursor:'pointer', padding:'0 2px' }}>{metaEventos > 0 ? '✏️' : '+ Meta'}</button>
+            : <form onSubmit={e => { e.preventDefault(); saveMeta(e.target.meta.value) }} style={{ display:'flex', gap:4 }}>
+                <input name="meta" defaultValue={metaEventos||''} type="number" min="1" placeholder="Meta" autoFocus
+                  style={{ width:60, padding:'3px 6px', border:'1px solid #D1D5DB', borderRadius:5, fontSize:12, fontFamily:'inherit' }} />
+                <button type="submit" style={{ fontSize:11, padding:'3px 7px', borderRadius:5, border:'none', background:'#1D4ED8', color:'#fff', cursor:'pointer' }}>OK</button>
+                <button type="button" onClick={() => setEditMeta(false)} style={{ fontSize:11, padding:'3px 7px', borderRadius:5, border:'1px solid #D1D5DB', background:'#F9FAFB', cursor:'pointer' }}>×</button>
+              </form>
+          }
+        </div>
+      </div>
       <PageHeader title="Calendario 2026" subtitle="Actividades e hitos del año"
         action={
           <div style={{ display:'flex', gap:8 }}>
@@ -110,7 +140,7 @@ export default function Calendario({ initialFilter = {} }) {
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
                 <tr style={{ background:'#F9FAFB', borderBottom:'1px solid #E8E7E2' }}>
-                  {['Evento','Tipo','Programa','Fecha','Inscritos','Participantes','Carpeta','Binder',''].map(h=>(
+                  {['Evento','Tipo','Programa','Fecha','Responsable','Inscritos','Participantes','Carpeta','Binder',''].map(h=>(
                     <th key={h} style={{ padding:'11px 14px', textAlign:'left', fontSize:11, fontWeight:700, color:'#6B7280', textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -126,17 +156,21 @@ export default function Calendario({ initialFilter = {} }) {
                       </td>
                       <td style={{ padding:'10px 14px', color:'#555', fontSize:12 }}>{a.programa||'—'}</td>
                       <td style={{ padding:'10px 14px', fontWeight:600, whiteSpace:'nowrap' }}>{a.fecha}</td>
+                      <td style={{ padding:'10px 14px', color:'#555', fontSize:12 }}>{a.responsable||'—'}</td>
                       <td style={{ padding:'10px 14px', color:'#555', fontSize:12, textAlign:'center' }}>{a.inscritos||'—'}</td>
                       <td style={{ padding:'10px 14px', color:'#555', fontSize:12, textAlign:'center' }}>{a.participantes||'—'}</td>
                       <td style={{ padding:'10px 14px', fontSize:12 }}>{a.url_carpeta ? <a href={a.url_carpeta} target="_blank" rel="noreferrer" style={{color:'#1D4ED8',fontWeight:600}}>📂 Abrir</a> : '—'}</td>
                       <td style={{ padding:'10px 14px' }}>
                         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                           <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:5, background:bs.bg, color:bs.color }}>{bs.label}</span>
-                          {a.binder_link && <a href={a.binder_link} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'#1D4ED8', fontWeight:600 }}>📁 Abrir</a>}
+                          {a.binder_link
+                            ? <a href={a.binder_link} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'#1D4ED8', fontWeight:600 }}>📁 Abrir binder</a>
+                            : <button onClick={()=>window.open('https://docs.google.com/document/d/1jchHjSmF_7AOVglbcfmcsvEo2E8JnzNh/copy','_blank')} style={{ fontSize:10, color:'#1D4ED8', background:'#EFF6FF', border:'1px solid #BFDBFE', borderRadius:4, padding:'2px 6px', cursor:'pointer', fontFamily:'inherit' }}>📄 Crear</button>
+                          }
                         </div>
                       </td>
                       <td style={{ padding:'10px 14px' }}>
-                        <button onClick={()=>{ setForm({...a}); setErrors({}); setModal({mode:'edit',item:a}) }} style={{ fontSize:11, padding:'4px 8px', borderRadius:5, border:'1px solid #D1D5DB', background:'#F9FAFB', cursor:'pointer' }}>Editar</button>
+                        <button onClick={()=>{ setForm({...a}); setErrors({}); setModal({mode:'edit',item:a}) }} style={{ fontSize:13, padding:'3px 7px', borderRadius:5, border:'1px solid #D1D5DB', background:'#F9FAFB', cursor:'pointer' }}>⚙</button>
                       </td>
                     </tr>
                   )
@@ -243,6 +277,9 @@ export default function Calendario({ initialFilter = {} }) {
               <option value="">Sin programa</option>
               {programas.map(p=><option key={p.nombre} value={p.nombre}>{p.nombre}</option>)}
             </Select>
+          </Field>
+          <Field label="Responsable">
+            <ResponsableSelect value={form.responsable||''} onChange={v=>setForm(f=>({...f,responsable:v}))} />
           </Field>
           <Field label="Lugar">
             <Input value={form.lugar} onChange={e=>setForm(f=>({...f,lugar:e.target.value}))} placeholder="Campus USIL, Zoom, Por definir..." />
